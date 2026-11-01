@@ -1017,12 +1017,13 @@ class Hitomi extends ComicSource {
         const text = "p=" + encodeURIComponent(pwd) + "&next=%2F"
         // Venera 的 Network.post 文档要求 body 是 ArrayBuffer；
         // 传普通字符串在某些版本上会变成空 body（Worker 就回 401），所以三种形式都试一遍
-        const bytes = (() => {
+        let bytes = null
+        try {
             const arr = []
             for (let i = 0; i < text.length; i++) arr.push(text.charCodeAt(i))
-            return new Uint8Array(arr)
-        })()
-        const payloads = [bytes, bytes.buffer, text]
+            bytes = new Uint8Array(arr)
+        } catch (e) { bytes = null }
+        const payloads = bytes ? [bytes, bytes.buffer, text] : [text]
         const headers = { "Content-Type": "application/x-www-form-urlencoded" }
         for (let i = 0; i < payloads.length; i++) {
             try {
