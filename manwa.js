@@ -4,11 +4,11 @@ class Manwa extends ComicSource {
 
   key = "manwa"
 
-  version = "1.0.0"
+  version = "1.0.1"
 
   minAppVersion = "1.4.0"
 
-  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.0/manwa.js"
+  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.1/manwa.js"
 
   settings = {
     domain: {
@@ -125,31 +125,33 @@ class Manwa extends ComicSource {
     loadEp: async (comicId, epId) => {
       const url = epId.startsWith("http") ? epId : this.baseUrl + epId
       const res = await Network.get(url, {})
-      if (res.status !== 200) throw `Invalid status code: ${res.status}`
+      if (res.status != 200) throw `Invalid status code: ${res.status}`
       const doc = new HtmlDocument(res.body)
 
-      const images = []
-      const push = (u) => {
-        if (!u) return
-        if (u.startsWith("//")) u = "https:" + u
-        if (!u.startsWith("http")) return
-        if (u.includes("/static/images/")) return
-        if (!images.includes(u)) images.push(u)
+      // 正文图片：<img class="content-img lazy_img" src="占位图"
+      //   data-r-src="真实地址" data-original="占位图" data-sort="1">
+      // 关键字段是 data-r-src，不是 data-src
+      const picked = []
+      for (const img of doc.querySelectorAll("img.content-img, .content-img img, img.lazy_img")) {
+        const real =
+          img.attributes["data-r-src"] ||
+          img.attributes["data-src"] ||
+          img.attributes["data-original"] ||
+          img.attributes["src"] ||
+          ""
+        if (!real) continue
+        if (real.includes("/static/images/")) continue
+        const sort = parseInt(img.attributes["data-sort"] || "0") || 0
+        picked.push({ sort: sort, url: real })
       }
 
-      // 正文图片：.content-img / .img-content 里面，lazy 加载用 data-src / data-original
-      for (const el of doc.querySelectorAll(".content-img, .content-img img, .img-content img")) {
-        if (el.attributes) {
-          push(el.attributes["data-original"])
-          push(el.attributes["data-src"])
-          push(el.attributes["data-url"])
-          push(el.attributes["src"])
-        }
-      }
-      if (!images.length) {
-        for (const img of doc.querySelectorAll("img")) {
-          push(img.attributes["data-src"] || img.attributes["data-original"] || img.attributes["src"])
-        }
+      picked.sort((a, b) => a.sort - b.sort)
+      const images = []
+      for (const it of picked) {
+        let u = it.url
+        if (u.startsWith("//")) u = "https:" + u
+        if (!u.startsWith("http")) continue
+        if (!images.includes(u)) images.push(u)
       }
       if (!images.length) throw "no images found"
       return { images }
