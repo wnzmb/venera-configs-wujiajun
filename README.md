@@ -8,7 +8,7 @@
 Venera → 设置 → 漫画源 → 添加源仓库，填：
 
 ```
-https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@main/index.json
+https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.1.3/index.json
 ```
 
 > `raw.githubusercontent.com` 在国内被 DNS 污染，**不要用 raw 地址**。
