@@ -23,13 +23,15 @@ class Nhentai extends ComicSource {
 
     // ===== 自建 Worker =====
     // Worker 有密码门，先 POST /__auth 拿 gate cookie，图片请求也要带
-    gatePassword = "nhentai363924@+0"
+    gatePassword = ""
     gateCookie = ""
 
     async ensureGate() {
         if (this.gateCookie) return
+        const pwd = (this.loadSetting && this.loadSetting("gatePassword")) || this.gatePassword
+        if (!pwd) return   // 没填密码就不登录，Worker 会返回登录页
         try {
-            const body = "p=" + encodeURIComponent(this.gatePassword) + "&next=%2F"
+            const body = "p=" + encodeURIComponent(pwd) + "&next=%2F"
             const res = await Network.post(this.baseUrl + "/__auth", {
                 "Content-Type": "application/x-www-form-urlencoded",
             }, body)
@@ -51,6 +53,12 @@ class Nhentai extends ComicSource {
     }
 
     settings = {
+        gatePassword: {
+            title: "Worker 访问密码",
+            type: "input",
+            default: "",
+        },
+
         apiKey: {
             title: "API Key (Optional)",
             type: "input",

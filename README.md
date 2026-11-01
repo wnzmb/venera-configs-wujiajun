@@ -16,13 +16,25 @@ https://raw.githubusercontent.com/wnzmb/venera-configs-wujiajun/main/index.json
 
 ## 包含的源
 
-| 源 | 反代域名 | 密码门 | 说明 |
-|---|---|---|---|
-| nhentai | `nhentai.wujiajun.ccwu.cc` | 内置，自动登录 | 走 `/api/v2/*` 接口；图片走 `/i/…`、缩略图 `/t/…` |
-| E-Hentai | `ehentai.wujiajun.ccwu.cc` | 内置，自动登录 | API 走 `/api-host/api.php`；图片 `/hath/…`、静态 `/ehgt/…` |
-| Hitomi | `hitomi.wujiajun.ccwu.cc` | 内置，自动登录 | CDN 走 `/cdn-proxy/<host>/…` |
+| 源 | 反代域名 | 说明 |
+|---|---|---|
+| nhentai | `nhentai.wujiajun.ccwu.cc` | 走 `/api/v2/*` 接口；图片走 `/i/…`、缩略图 `/t/…` |
+| E-Hentai | `ehentai.wujiajun.ccwu.cc` | API 走 `/api-host/api.php`；图片 `/hath/…`、静态 `/ehgt/…` |
+| Hitomi | `hitomi.wujiajun.ccwu.cc` | CDN 走 `/cdn-proxy/<host>/…` |
 
-密码写在各自文件的 `gatePassword` 字段里；Worker 端密码改了之后同步改这里。
+### 填密码（一次性）
+
+仓库是公开的，所以**密码不写在文件里**。三个源各自在：
+
+Venera → 漫画源 → 点进对应源 → 设置 → **Worker 访问密码** 填一次。
+
+| 源 | 密码 |
+|---|---|
+| nhentai | `nhentai363924@+0` |
+| E-Hentai | `ehentai363924@+0` |
+| Hitomi | `hitomi363924@+0` |
+
+填完会 `POST /__auth` 拿 gate cookie，之后自动带上（图片请求也带）。
 
 ## 这些文件和上游的差别
 
