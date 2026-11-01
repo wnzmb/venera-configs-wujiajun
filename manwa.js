@@ -4,11 +4,11 @@ class Manwa extends ComicSource {
 
   key = "manwa"
 
-  version = "1.0.3"
+  version = "1.0.4"
 
   minAppVersion = "1.4.0"
 
-  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.3/manwa.js"
+  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.4/manwa.js"
 
   settings = {
     domain: {
@@ -46,6 +46,18 @@ class Manwa extends ComicSource {
     return "https://" + host + "/" + u.replace(/^\/+/, "")
   }
 
+  // 依次尝试几个属性，取第一个不是占位图的
+  pickImg(...candidates) {
+    for (const c of candidates) {
+      if (!c) continue
+      const abs = this.absUrl(c)
+      if (!abs) continue
+      if (this.isPlaceholder(abs)) continue
+      return abs
+    }
+    return ""
+  }
+
   isPlaceholder(u) {
     if (!u) return true
     return u.includes("/static/images/") || u.includes("imagecover")
@@ -64,7 +76,7 @@ class Manwa extends ComicSource {
       result.push(new Comic({
         id: href,
         title: titleAttr.trim() || href,
-        cover: this.absUrl(img.attributes["data-r-src"] || img.attributes["src"] || ""),
+        cover: this.pickImg(img.attributes["data-r-src"], img.attributes["data-original"], img.attributes["src"]),
         tags: [],
       }))
     }
@@ -108,10 +120,9 @@ class Manwa extends ComicSource {
 
       let cover = ""
       for (const img of doc.querySelectorAll("img")) {
-        const raw = img.attributes["data-r-src"] || img.attributes["data-original"] || img.attributes["src"] || ""
-        if (!raw) continue
-        if (!raw.includes("cover")) continue
-        const abs = this.absUrl(raw)
+        const abs = this.pickImg(img.attributes["data-r-src"], img.attributes["data-original"], img.attributes["src"])
+        if (!abs) continue
+        if (!abs.includes("cover")) continue
         if (this.isPlaceholder(abs)) continue
         cover = abs
         break
@@ -131,7 +142,8 @@ class Manwa extends ComicSource {
         const href = a.attributes["href"] || ""
         const m = href.match(/^\/chapter\/(\d+)$/)
         if (!m) continue
-        const name = a.text.trim() || m[1]
+        let name = a.text.trim()
+        if (!name) name = `第 ${Object.keys(chapters).length + 1} 话`
         if (chapters[name]) continue
         chapters[name] = href
       }
