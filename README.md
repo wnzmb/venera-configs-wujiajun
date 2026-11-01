@@ -1,7 +1,7 @@
 # venera-configs-wujiajun
 
 给 [Venera](https://github.com/venera-app/venera) 用的漫画源。前 5 个指向**自建 Cloudflare Worker 反代**，
-最后一个是直连站（图片走公共 CDN，墙内可达）。
+后 3 个是**直连站**（不需要 Worker，图片走公共 CDN，墙内可达）。
 
 > 2026-11-01 复测：**3hentai / imhentai 各有一个可直连的替代域名**，不需要 Worker（见文末「直连替代域」）；
 > hentai2read / simply-hentai 仍不可用。
@@ -11,7 +11,7 @@
 Venera → 设置 → 漫画源 → 添加源仓库，填：
 
 ```
-https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.4/index.json
+https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.7.0/index.json
 ```
 
 > jsDelivr 对 `@main` 有缓存（最长 12 小时），所以用**版本 tag**。更新时会打新 tag。
@@ -28,6 +28,8 @@ https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.4/index.json
 | Hentaifox | 1.0.0 | 反代 | 详情页含全部页图，页号可推导 |
 | HentaiRead | 1.2.0 | 反代 | 搜索走站点 `quick_search` AJAX（**GET**）；详情页含全部页图 |
 | 漫蛙 | 1.0.4 | 直连 | manwarp 系列；图床 `mmwwccffiimmgg4.cc`；真实封面在 `data-original` |
+| 3Hentai | 1.0.0 | 直连 | `3hentai.to`；详情页含全部页缩略图，去掉文件名里的 `t` 即全尺寸 |
+| IMHentai | 1.0.0 | 直连 | `imhentai.to`；同上，图片在 `supercdn.site/galleries/<mid>/` |
 
 ## 登录（前 5 个反代源，一次性）
 
@@ -56,6 +58,10 @@ Venera 的 `Network.post` 传不了二进制 body，源里的自动登录会 401
    另一回事，纯 urlencoded 表单现在可以走 POST。
 5. **漫蛙的坑**：封面真实地址在 `data-original`（列表）/ `data-r-src`（阅读页），`src` 全是内置占位图；
    相对路径要按**图床域名**解析，站点域 `/static/...` 是 404。
+6. **3hentai / imhentai 的通用套路**：详情页把**全部页**的缩略图都渲染在 HTML 里（3hentai 最多试到 251 页也没截断），
+   文件名形如 `<page>t.webp`，把 `t` 去掉就是全尺寸图；图片域名要**从缩略图 URL 里取**，不能写死
+   （3hentai 有 `3-hentai.xyz` 和 `cdn.3-hentai.xyz` 两种，imhentai 是 `supercdn.site`）。
+   两站图片都不校验 Referer。imhentai 的搜索**每页都要带 `q`**，否则第 2 页起会退化成首页列表。
 
 ## 不可用的站
 
