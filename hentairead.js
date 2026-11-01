@@ -4,13 +4,17 @@ class HentaiRead extends ComicSource {
 
   key = "hentairead"
 
-  version = "1.1.0"
+  version = "1.2.0"
 
   minAppVersion = "1.4.0"
 
-  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.3.1/hentairead.js"
+  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.4.0/hentairead.js"
 
   baseUrl = "https://hentairead.wujiajun.ccwu.cc"
+
+  // 站点自己的快搜接口（从 header.min.js 里逆出来的）
+  // 注意：必须用 GET —— Worker 会把 POST 的 body 吃掉，POST 会得到 400
+  ajaxUrl = "https://hentairead.wujiajun.ccwu.cc/wp-admin/admin-ajax.php"
 
   gateCookie = ""
 
@@ -30,7 +34,6 @@ class HentaiRead extends ComicSource {
     return this.gateCookie ? { "Cookie": this.gateCookie } : {}
   }
 
-  // Worker 密码门：网页登录（POST body 在 Venera 里传不进去）
   account = {
     loginWithWebview: {
       url: "https://hentairead.wujiajun.ccwu.cc/__auth",
@@ -41,30 +44,43 @@ class HentaiRead extends ComicSource {
     },
   }
 
-  // 这个站的列表是前端渲染的：HTML 里只有 /hentai/<slug>/ 链接，
-  // 没有标题也没有封面。所以标题从 slug 还原，封面留空（Venera 会显示占位）。
-  // 详情页是完整服务端渲染的，标题/封面/页图都能正常拿。
-  parseComics(doc) {
+  // 卡片：div.manga-item > a[href*=/hentai/] + img(alt=标题, src=封面)
+  parseCards(doc) {
+    const result = []
+    const seen = {}
+    for (const item of doc.querySelectorAll(".manga-item")) {
+      const a = item.querySelector("a[href*='/hentai/']")
+      const img = item.querySelector("img")
+      if (!a || !img) continue
+      const href = a.attributes["href"]
+      if (!href || seen[href]) continue
+      seen[href] = true
+      result.push(new Comic({
+        id: href,
+        title: (img.attributes["alt"] || "").trim(),
+        cover: img.attributes["src"] || "",
+        tags: [],
+      }))
+    }
+    return result
+  }
+
+  // 老版本兜底：列表页若没有卡片容器，就从链接 slug 还原标题
+  parseFallback(doc) {
     const result = []
     const seen = {}
     for (const a of doc.querySelectorAll("a[href*='/hentai/']")) {
       const href = a.attributes["href"] || ""
       const m = href.match(/\/hentai\/([^/?#]+)\/?$/)
-      if (!m) continue
+      if (!m || seen[href]) continue
       const cls = a.attributes["class"] || ""
       if (cls.includes("menu-item")) continue
-      if (seen[href]) continue
       seen[href] = true
       const img = a.querySelector("img")
-      const cover = img ? (img.attributes["data-src"] || img.attributes["src"] || "") : ""
-      const title = m[1]
-        .split("-")
-        .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w))
-        .join(" ")
       result.push(new Comic({
         id: href,
-        title: title,
-        cover: cover,
+        title: m[1].split("-").map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w)).join(" "),
+        cover: img ? (img.attributes["src"] || "") : "",
         tags: [],
       }))
     }
@@ -80,7 +96,9 @@ class HentaiRead extends ComicSource {
         const res = await Network.get(this.baseUrl + "/", {})
         if (res.status !== 200) throw `Invalid status code: ${res.status}`
         const doc = new HtmlDocument(res.body)
-        return [{ title: "最新更新", comics: this.parseComics(doc), viewMore: null }]
+        let comics = this.parseCards(doc)
+        if (!comics.length) comics = this.parseFallback(doc)
+        return [{ title: "最新更新", comics: comics, viewMore: null }]
       },
     },
   ]
@@ -88,12 +106,14 @@ class HentaiRead extends ComicSource {
   search = {
     load: async (keyword, options, page) => {
       await this.syncCookie()
-      const url = `${this.baseUrl}/?s=${encodeURIComponent(keyword)}&paged=${page}`
-      const res = await Network.get(url, {})
+      const url = `${this.ajaxUrl}?action=quick_search&keyword=${encodeURIComponent(keyword)}`
+      const res = await Network.get(url, { "X-Requested-With": "XMLHttpRequest" })
       if (res.status !== 200) throw `Invalid status code: ${res.status}`
-      const doc = new HtmlDocument(res.body)
+      const json = JSON.parse(res.body)
+      const html = (json && json.data && json.data.searchMangaResults) || ""
+      const doc = new HtmlDocument(html)
       return {
-        comics: this.parseComics(doc),
+        comics: this.parseCards(doc),
         maxPage: null,
       }
     },
@@ -121,8 +141,8 @@ class HentaiRead extends ComicSource {
 
       let cover = ""
       for (const img of doc.querySelectorAll("img")) {
-        const src = img.attributes["src"] || img.attributes["data-src"] || ""
-        if (src.includes("/cv/cover/")) {
+        const src = img.attributes["src"] || ""
+        if (src.includes("/cv/cover/") && !src.includes("Favicon")) {
           cover = src
           break
         }
@@ -158,7 +178,7 @@ class HentaiRead extends ComicSource {
       for (const img of doc.querySelectorAll("img")) {
         const alt = img.attributes["alt"] || ""
         if (!/^Page\s+\d+/i.test(alt)) continue
-        const src = img.attributes["src"] || img.attributes["data-src"] || ""
+        const src = img.attributes["src"] || ""
         if (src.includes("/cv/preview/")) images.push(src)
       }
       if (!images.length) throw "no images found"
