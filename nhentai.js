@@ -7,7 +7,7 @@ class Nhentai extends ComicSource {
     // unique id of the source
     key = "nhentai"
 
-    version = "1.1.0"
+    version = "1.1.1"
 
     minAppVersion = "1.0.0"
 
@@ -30,17 +30,30 @@ class Nhentai extends ComicSource {
         if (this.gateCookie) return
         const pwd = (this.loadSetting && this.loadSetting("gatePassword")) || this.gatePassword
         if (!pwd) return   // 没填密码就不登录，Worker 会返回登录页
-        try {
-            const body = "p=" + encodeURIComponent(pwd) + "&next=%2F"
-            const res = await Network.post(this.baseUrl + "/__auth", {
-                "Content-Type": "application/x-www-form-urlencoded",
-            }, body)
-            const h = res.headers || {}
-            let sc = h["set-cookie"] || h["Set-Cookie"] || ""
-            if (Array.isArray(sc)) sc = sc.join("; ")
-            const m = sc.match(/([A-Za-z0-9_]+_gate=[^;]+)/)
-            if (m) this.gateCookie = m[1]
-        } catch (e) {}
+        const text = "p=" + encodeURIComponent(pwd) + "&next=%2F"
+        // Venera 的 Network.post 文档要求 body 是 ArrayBuffer；
+        // 传普通字符串在某些版本上会变成空 body（Worker 就回 401），所以三种形式都试一遍
+        const bytes = (() => {
+            const arr = []
+            for (let i = 0; i < text.length; i++) arr.push(text.charCodeAt(i))
+            return new Uint8Array(arr)
+        })()
+        const payloads = [bytes, bytes.buffer, text]
+        const headers = { "Content-Type": "application/x-www-form-urlencoded" }
+        for (let i = 0; i < payloads.length; i++) {
+            try {
+                const res = await Network.post(this.baseUrl + "/__auth", headers, payloads[i])
+                if (res.status === 401) continue
+                const h = res.headers || {}
+                let sc = h["set-cookie"] || h["Set-Cookie"] || ""
+                if (Array.isArray(sc)) sc = sc.join("; ")
+                const m = sc.match(/([A-Za-z0-9_]+_gate=[^;]+)/)
+                if (m) {
+                    this.gateCookie = m[1]
+                    return
+                }
+            } catch (e) {}
+        }
     }
 
     cookieHeader() {
