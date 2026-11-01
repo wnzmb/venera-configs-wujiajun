@@ -1,69 +1,59 @@
 # venera-configs-wujiajun
 
-给 [Venera](https://github.com/venera-app/venera) 用的漫画源，**全部指向自建的 Cloudflare Worker 反代**，
-墙内直连可用。
+给 [Venera](https://github.com/venera-app/venera) 用的漫画源。前 5 个指向**自建 Cloudflare Worker 反代**，
+最后一个是直连站（图片走公共 CDN，墙内可达）。
 
 ## 用法
 
 Venera → 设置 → 漫画源 → 添加源仓库，填：
 
 ```
-https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.1.4/index.json
+https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.4/index.json
 ```
 
-> `raw.githubusercontent.com` 在国内被 DNS 污染，**不要用 raw 地址**。
-> 如果 jsDelivr 也不通，用 `https://gh-proxy.com/https://raw.githubusercontent.com/wnzmb/venera-configs-wujiajun/main/index.json`
+> jsDelivr 对 `@main` 有缓存（最长 12 小时），所以用**版本 tag**。更新时会打新 tag。
+> `raw.githubusercontent.com` 在国内被 DNS 污染，不要用。
+> 如果 jsDelivr 也不通：`https://gh-proxy.com/https://raw.githubusercontent.com/wnzmb/venera-configs-wujiajun/main/index.json`
 
-## 包含的源
+## 源列表
 
-| 源 | 反代域名 | 说明 |
-|---|---|---|
-| nhentai | `nhentai.wujiajun.ccwu.cc` | 走 `/api/v2/*` 接口；图片走 `/i/…`、缩略图 `/t/…` |
-| E-Hentai | `ehentai.wujiajun.ccwu.cc` | API 走 `/api-host/api.php`；图片 `/hath/…`、静态 `/ehgt/…` |
-| Hitomi | `hitomi.wujiajun.ccwu.cc` | CDN 走 `/cdn-proxy/<host>/…` |
+| 源 | 版本 | 类型 | 说明 |
+|---|---|---|---|
+| nhentai | 1.1.2 | 反代 | `/api/v2/*`；图片 `/i/…`、缩略图 `/t/…` |
+| E-Hentai | 1.2.2 | 反代 | API `/api-host/api.php`；图片 `/hath/…`、静态 `/ehgt/…` |
+| Hitomi | 1.1.4 | 反代 | CDN 走 `/cdn-proxy/<host>/…` |
+| Hentaifox | 1.0.0 | 反代 | 详情页含全部页图，页号可推导 |
+| HentaiRead | 1.2.0 | 反代 | 搜索走站点 `quick_search` AJAX（**GET**）；详情页含全部页图 |
+| 漫蛙 | 1.0.4 | 直连 | manwarp 系列；图床 `mmwwccffiimmgg4.cc`；真实封面在 `data-original` |
 
-### 登录（一次性，必须做）
+## 登录（前 5 个反代源，一次性）
 
-Venera 的 `Network.post` 传不了二进制 body，所以在源设置里填密码**不可靠**（实测会 401）。
-正确姿势是**网页登录**：
+Venera 的 `Network.post` 传不了二进制 body，源里的自动登录会 401。正确姿势是**网页登录**：
 
-Venera → 漫画源 → 点进对应源 → **登录** → 弹出的就是 Worker 密码页 → 输密码提交 → 会自动回到站点首页。
-
-之后 gate cookie 会存在 Venera 的 cookie 罐里，API 和图片都会自动带上。
+源详情 → **登录** → 弹出的就是 Worker 密码页 → 输密码提交。
 
 | 源 | 密码 |
 |---|---|
 | nhentai | `nhentai363924@+0` |
 | E-Hentai | `ehentai363924@+0` |
 | Hitomi | `hitomi363924@+0` |
+| Hentaifox | `hentaifox363924@+0` |
+| HentaiRead | `hentairead363924@+0` |
 
-填完会 `POST /__auth` 拿 gate cookie，之后自动带上（图片请求也带）。
+（密码没写进仓库，公开仓库不暴露。要改就看各文件的 `gatePassword` 设置项默认值。）
 
-## 这些文件和上游的差别
+## 实现要点 / 踩过的坑
 
-只改了「地址」和「登录」，逻辑一行没动：
+1. **UA**：`cf_clearance` 绑定 UA，抓取必须用 WebView 的真实 UA，否则 CF 403。
+2. **密码门**：`/__auth` 只能 POST，而 Venera 的 POST body 传不进去 → 只能网页登录。
+3. **图片也要 Cookie**：Worker 的 `/vd/`、`/cdn-proxy/` 也走密码门，图片请求不带 Cookie 就是 401。
+4. **POST body 会被 Worker 丢掉**：任何 POST 接口都会失败，尽量找 GET 变体（hentairead 的搜索就是这么救回来的）。
+5. **漫蛙的坑**：封面真实地址在 `data-original`（列表）/ `data-r-src`（阅读页），`src` 全是内置占位图；
+   相对路径要按**图床域名**解析，站点域 `/static/...` 是 404。
 
-1. `baseUrl` / `apiBaseUrl` / `imageServer` / `thumbServer` / CDN 前缀 → 自建 Worker
-2. 新增 `gatePassword` + `ensureGate()`：首次请求前先 `POST /__auth` 拿 gate cookie
-3. 图片 / 缩略图请求额外带上 `Cookie`（Worker 的图片路径也走密码门，不带就是 401）
-4. `url`（自更新地址）指向本仓库
+## 不可用的站
 
-上游来源：
-
-- nhentai.js / ehentai.js / hitomi.js 来自 [venera-app/venera-configs](https://github.com/venera-app/venera-configs)
-- 规范见 [doc/comic_source.md](https://github.com/venera-app/venera/blob/main/doc/comic_source.md)
-
-## 已验证
-
-2026-11-01 用密码门 cookie 实测：
-
-- `nhentai`: `/api/v2/search?query=…` 200 JSON；`/i/galleries/…`、`/t/galleries/…` 200 图片
-- `ehentai`: `POST /api-host/api.php`（`gdata`）200，返回的 `thumb` 已改写成
-  `https://ehentai.wujiajun.ccwu.cc/ehgt/…`
-- `hitomi`: `/cdn-proxy/ltn.gold-usergeneratedcontent.net/galleries/<id>.js` 200
-
-## 后续
-
-cf-proxy 里还有 `hentaifox` / `hentai2read` / `imhentai` / `simplyhentai` / `3hentai` / `hentairead`
-的 Worker。要加就照 [comic_source.md](https://github.com/venera-app/venera/blob/main/doc/comic_source.md)
-的规范写新文件，再在 `index.json` 里登记一条。
+| 站点 | 原因 |
+|---|---|
+| imhentai / hentai2read / simplyhentai | 上游 Cloudflare 挑战（`Just a moment...`），Worker 出口是机房 IP，纯 HTTP 过不了 |
+| 3hentai | 首页可达，详情页 Worker 回 502「上游没响应」，等恢复再补 |
