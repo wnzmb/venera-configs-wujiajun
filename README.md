@@ -8,7 +8,7 @@
 Venera → 设置 → 漫画源 → 添加源仓库，填：
 
 ```
-https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.1.3/index.json
+https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.1.4/index.json
 ```
 
 > `raw.githubusercontent.com` 在国内被 DNS 污染，**不要用 raw 地址**。
@@ -22,11 +22,14 @@ https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.1.3/index.json
 | E-Hentai | `ehentai.wujiajun.ccwu.cc` | API 走 `/api-host/api.php`；图片 `/hath/…`、静态 `/ehgt/…` |
 | Hitomi | `hitomi.wujiajun.ccwu.cc` | CDN 走 `/cdn-proxy/<host>/…` |
 
-### 填密码（一次性）
+### 登录（一次性，必须做）
 
-仓库是公开的，所以**密码不写在文件里**。三个源各自在：
+Venera 的 `Network.post` 传不了二进制 body，所以在源设置里填密码**不可靠**（实测会 401）。
+正确姿势是**网页登录**：
 
-Venera → 漫画源 → 点进对应源 → 设置 → **Worker 访问密码** 填一次。
+Venera → 漫画源 → 点进对应源 → **登录** → 弹出的就是 Worker 密码页 → 输密码提交 → 会自动回到站点首页。
+
+之后 gate cookie 会存在 Venera 的 cookie 罐里，API 和图片都会自动带上。
 
 | 源 | 密码 |
 |---|---|

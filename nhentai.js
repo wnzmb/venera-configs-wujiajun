@@ -7,7 +7,7 @@ class Nhentai extends ComicSource {
     // unique id of the source
     key = "nhentai"
 
-    version = "1.1.1"
+    version = "1.1.2"
 
     minAppVersion = "1.0.0"
 
@@ -25,6 +25,18 @@ class Nhentai extends ComicSource {
     // Worker 有密码门，先 POST /__auth 拿 gate cookie，图片请求也要带
     gatePassword = ""
     gateCookie = ""
+
+    async ensureGateFromJar() {
+        try {
+            const cookies = await Network.getCookies(this.baseUrl)
+            for (const c of cookies || []) {
+                if (c && c.name && c.name.endsWith("_gate") && c.value) {
+                    this.gateCookie = c.name + "=" + c.value
+                    return
+                }
+            }
+        } catch (e) {}
+    }
 
     async ensureGate() {
         if (this.gateCookie) return
@@ -84,9 +96,7 @@ class Nhentai extends ComicSource {
     account = {
         loginWithWebview: {
             url: "https://nhentai.wujiajun.ccwu.cc/__auth",
-            checkStatus: (url, title) => {
-                return title === "nhentai: hentai doujinshi and manga"
-            },
+            checkStatus: (url, title) => !url.includes("__auth"),
             onLoginSuccess: async () => {
                 await this.persistAuthFromCookies()
             },

@@ -998,6 +998,14 @@ class Hitomi extends ComicSource {
 
   // name of the source
   name = "hitomi.la"
+  account = {
+    loginWithWebview: {
+      url: "https://hitomi.wujiajun.ccwu.cc/__auth",
+      checkStatus: (url, title) => !url.includes("__auth"),
+      onLoginSuccess: async () => { await this.ensureGateFromJar() },
+    },
+  }
+
     settings = {
         gatePassword: {
             title: "Worker 访问密码",
@@ -1009,6 +1017,18 @@ class Hitomi extends ComicSource {
     // ===== 自建 Worker（密码门） =====
     gatePassword = ""
     gateCookie = ""
+
+    async ensureGateFromJar() {
+        try {
+            const cookies = await Network.getCookies(this.baseUrl)
+            for (const c of cookies || []) {
+                if (c && c.name && c.name.endsWith("_gate") && c.value) {
+                    this.gateCookie = c.name + "=" + c.value
+                    return
+                }
+            }
+        } catch (e) {}
+    }
 
     async ensureGate() {
         if (this.gateCookie) return
@@ -1051,7 +1071,7 @@ class Hitomi extends ComicSource {
   // unique id of the source
   key = "hitomi";
 
-  version = "1.1.3";
+  version = "1.1.4";
 
   minAppVersion = "1.4.6";
 

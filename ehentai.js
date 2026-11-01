@@ -7,7 +7,7 @@ class Ehentai extends ComicSource {
     // unique id of the source
     key = "ehentai"
 
-    version = "1.2.1"
+    version = "1.2.2"
 
     minAppVersion = "1.5.3"
 
@@ -23,6 +23,18 @@ class Ehentai extends ComicSource {
     // ===== 自建 Worker =====
     gatePassword = ""
     gateCookie = ""
+
+    async ensureGateFromJar() {
+        try {
+            const cookies = await Network.getCookies(this.baseUrl)
+            for (const c of cookies || []) {
+                if (c && c.name && c.name.endsWith("_gate") && c.value) {
+                    this.gateCookie = c.name + "=" + c.value
+                    return
+                }
+            }
+        } catch (e) {}
+    }
 
     async ensureGate() {
         if (this.gateCookie) return
@@ -127,9 +139,7 @@ class Ehentai extends ComicSource {
              * @param title {string} - current title
              * @returns {boolean} - return true if login success
              */
-            checkStatus: (url, title) => {
-                return title === "E-Hentai Forums";
-            },
+            checkStatus: (url, title) => !url.includes("__auth"),
             onLoginSuccess: async () => {
                 let cookies = await Network.getCookies("https://forums.e-hentai.org")
                 cookies.forEach((cookie) => {
