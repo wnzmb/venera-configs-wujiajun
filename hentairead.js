@@ -4,11 +4,11 @@ class HentaiRead extends ComicSource {
 
   key = "hentairead"
 
-  version = "1.0.0"
+  version = "1.1.0"
 
   minAppVersion = "1.4.0"
 
-  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.3.0/hentairead.js"
+  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.3.1/hentairead.js"
 
   baseUrl = "https://hentairead.wujiajun.ccwu.cc"
 
@@ -41,20 +41,26 @@ class HentaiRead extends ComicSource {
     },
   }
 
+  // 这个站的列表是前端渲染的：HTML 里只有 /hentai/<slug>/ 链接，
+  // 没有标题也没有封面。所以标题从 slug 还原，封面留空（Venera 会显示占位）。
+  // 详情页是完整服务端渲染的，标题/封面/页图都能正常拿。
   parseComics(doc) {
     const result = []
     const seen = {}
     for (const a of doc.querySelectorAll("a[href*='/hentai/']")) {
       const href = a.attributes["href"] || ""
-      if (!href.match(/\/hentai\/[^/]+\/?$/)) continue
+      const m = href.match(/\/hentai\/([^/?#]+)\/?$/)
+      if (!m) continue
+      const cls = a.attributes["class"] || ""
+      if (cls.includes("menu-item")) continue
       if (seen[href]) continue
-      const img = a.querySelector("img")
-      if (!img) continue
-      const cover = img.attributes["data-src"] || img.attributes["src"] || ""
-      if (!cover) continue
       seen[href] = true
-      const titleEl = a.querySelector("h1,h2,h3,h4,.title")
-      const title = titleEl ? titleEl.text.trim() : (img.attributes["alt"] || "").trim()
+      const img = a.querySelector("img")
+      const cover = img ? (img.attributes["data-src"] || img.attributes["src"] || "") : ""
+      const title = m[1]
+        .split("-")
+        .map((w) => (w.length ? w[0].toUpperCase() + w.slice(1) : w))
+        .join(" ")
       result.push(new Comic({
         id: href,
         title: title,

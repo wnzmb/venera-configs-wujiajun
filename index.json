@@ -3,5 +3,5 @@
   { "name": "E-Hentai（自建反代）", "fileName": "ehentai.js", "key": "ehentai", "version": "1.2.2" },
   { "name": "Hitomi（自建反代）", "fileName": "hitomi.js", "key": "hitomi", "version": "1.1.4" },
   { "name": "Hentaifox（自建反代）", "fileName": "hentaifox.js", "key": "hentaifox", "version": "1.0.0" },
-  { "name": "HentaiRead（自建反代）", "fileName": "hentairead.js", "key": "hentairead", "version": "1.0.0" }
+  { "name": "HentaiRead（自建反代）", "fileName": "hentairead.js", "key": "hentairead", "version": "1.1.0" }
 ]
