@@ -4,5 +4,5 @@
   { "name": "Hitomi（自建反代）", "fileName": "hitomi.js", "key": "hitomi", "version": "1.1.4" },
   { "name": "Hentaifox（自建反代）", "fileName": "hentaifox.js", "key": "hentaifox", "version": "1.0.0" },
   { "name": "HentaiRead（自建反代）", "fileName": "hentairead.js", "key": "hentairead", "version": "1.2.0" },
-  { "name": "漫蛙（直连）", "fileName": "manwa.js", "key": "manwa", "version": "1.0.1" }
+  { "name": "漫蛙（直连）", "fileName": "manwa.js", "key": "manwa", "version": "1.0.2" }
 ]

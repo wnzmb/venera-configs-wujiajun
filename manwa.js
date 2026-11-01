@@ -4,11 +4,11 @@ class Manwa extends ComicSource {
 
   key = "manwa"
 
-  version = "1.0.1"
+  version = "1.0.2"
 
   minAppVersion = "1.4.0"
 
-  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.1/manwa.js"
+  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.2/manwa.js"
 
   settings = {
     domain: {
@@ -30,6 +30,20 @@ class Manwa extends ComicSource {
 
   // 列表卡片：li > .manga-list-2-cover > a[href=/book/<id>] > img
   //          + .manga-list-2-title > a （标题）
+  // 相对路径 / 协议相对 → 绝对；占位图一律过滤
+  absUrl(u) {
+    if (!u) return ""
+    u = u.trim()
+    if (u.startsWith("//")) return "https:" + u
+    if (u.startsWith("http")) return u
+    return this.baseUrl + "/" + u.replace(/^\/+/, "")
+  }
+
+  isPlaceholder(u) {
+    if (!u) return true
+    return u.includes("/static/images/") || u.includes("imagecover")
+  }
+
   parseComics(doc) {
     const result = []
     const seen = {}
@@ -43,7 +57,7 @@ class Manwa extends ComicSource {
       result.push(new Comic({
         id: href,
         title: titleAttr.trim() || href,
-        cover: img.attributes["src"] || img.attributes["data-src"] || "",
+        cover: this.absUrl(img.attributes["data-r-src"] || img.attributes["src"] || ""),
         tags: [],
       }))
     }
@@ -87,11 +101,13 @@ class Manwa extends ComicSource {
 
       let cover = ""
       for (const img of doc.querySelectorAll("img")) {
-        const src = img.attributes["src"] || img.attributes["data-src"] || ""
-        if (src.includes("/cover/")) {
-          cover = src
-          break
-        }
+        const raw = img.attributes["data-r-src"] || img.attributes["data-original"] || img.attributes["src"] || ""
+        if (!raw) continue
+        if (!raw.includes("cover")) continue
+        const abs = this.absUrl(raw)
+        if (this.isPlaceholder(abs)) continue
+        cover = abs
+        break
       }
 
       const tags = {}
