@@ -1042,7 +1042,7 @@ class Hitomi extends ComicSource {
   minAppVersion = "1.4.6";
 
   // update url
-  url = "https://raw.githubusercontent.com/wnzmb/venera-configs-wujiajun/main/hitomi.js";
+  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@main/hitomi.js";
 
   galleryCache = [];
   categoryResultCache = undefined;
