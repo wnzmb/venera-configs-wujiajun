@@ -4,11 +4,11 @@ class Manwa extends ComicSource {
 
   key = "manwa"
 
-  version = "1.0.2"
+  version = "1.0.3"
 
   minAppVersion = "1.4.0"
 
-  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.2/manwa.js"
+  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.6.3/manwa.js"
 
   settings = {
     domain: {
@@ -21,6 +21,11 @@ class Manwa extends ComicSource {
         { value: "manwaro.cc" },
       ],
       default: "manwarp.cc",
+    },
+    imgHost: {
+      title: "图床域名（封面/正文图）",
+      type: "input",
+      default: "mmwwccffiimmgg4.cc",
     },
   }
 
@@ -36,7 +41,9 @@ class Manwa extends ComicSource {
     u = u.trim()
     if (u.startsWith("//")) return "https:" + u
     if (u.startsWith("http")) return u
-    return this.baseUrl + "/" + u.replace(/^\/+/, "")
+    // 相对路径是相对「图床」的：站点域 /static/... 是 404，图床域才有图
+    const host = (this.loadSetting && this.loadSetting("imgHost")) || "mmwwccffiimmgg4.cc"
+    return "https://" + host + "/" + u.replace(/^\/+/, "")
   }
 
   isPlaceholder(u) {
