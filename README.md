@@ -11,7 +11,7 @@
 Venera → 设置 → 漫画源 → 添加源仓库，填：
 
 ```
-https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.7.0/index.json
+https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.7.1/index.json
 ```
 
 > jsDelivr 对 `@main` 有缓存（最长 12 小时），所以用**版本 tag**。更新时会打新 tag。
@@ -28,7 +28,7 @@ https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.7.0/index.json
 | Hentaifox | 1.0.0 | 反代 | 详情页含全部页图，页号可推导 |
 | HentaiRead | 1.2.0 | 反代 | 搜索走站点 `quick_search` AJAX（**GET**）；详情页含全部页图 |
 | 漫蛙 | 1.0.4 | 直连 | manwarp 系列；图床 `mmwwccffiimmgg4.cc`；真实封面在 `data-original` |
-| 3Hentai | 1.0.0 | 直连 | `3hentai.to`；详情页含全部页缩略图，去掉文件名里的 `t` 即全尺寸 |
+| 3Hentai | 1.0.1 | 直连 | `3hentai.to`；详情页含全部页缩略图，去掉文件名里的 `t` 即全尺寸 |
 | IMHentai | 1.0.0 | 直连 | `imhentai.to`；同上，图片在 `supercdn.site/galleries/<mid>/` |
 
 ## 登录（前 5 个反代源，一次性）
@@ -62,6 +62,9 @@ Venera 的 `Network.post` 传不了二进制 body，源里的自动登录会 401
    文件名形如 `<page>t.webp`，把 `t` 去掉就是全尺寸图；图片域名要**从缩略图 URL 里取**，不能写死
    （3hentai 有 `3-hentai.xyz` 和 `cdn.3-hentai.xyz` 两种，imhentai 是 `supercdn.site`）。
    两站图片都不校验 Referer。imhentai 的搜索**每页都要带 `q`**，否则第 2 页起会退化成首页列表。
+7. **`key` 不能以数字开头**：Venera 解析完源后会执行 `ComicSource.sources.$key = this['temp']`，
+   key 写成 `3hentai` 就变成 `ComicSource.sources.3hentai`，QuickJS 直接报
+   `SyntaxError: invalid number literal at <eval>:1:1`（添加源时就会失败）。所以 3Hentai 源的 key 是 **`threehentai`**。
 
 ## 不可用的站
 

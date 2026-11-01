@@ -2,13 +2,14 @@
 class ThreeHentai extends ComicSource {
   name = "3Hentai"
 
-  key = "3hentai"
+  // key 不能以数字开头：Venera 会拼成 ComicSource.sources.$key 再执行 JS
+  key = "threehentai"
 
-  version = "1.0.0"
+  version = "1.0.1"
 
   minAppVersion = "1.4.0"
 
-  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.7.0/3hentai.js"
+  url = "https://cdn.jsdelivr.net/gh/wnzmb/venera-configs-wujiajun@v1.7.1/3hentai.js"
 
   // 直连站，不需要 Worker / 密码门
   baseUrl = "https://3hentai.to"
